@@ -1346,6 +1346,40 @@ git add README.md web/.env.local.example && git commit -m "docs: setup guide and
 
 ---
 
+## 计划修订（2026-06-12）：UI 框架切换到 shadcn/ui
+
+用户要求前端 UI 改用 shadcn/ui（基于 Radix + Tailwind）。脚手架当初用了 `--no-tailwind`，需补 Tailwind + shadcn init。以下三个修订任务在 Task 7 之后、Task 8 之前执行。**所有非视觉逻辑（validateJoin、captions 协议、reducer、token 路由、数据流）保持不变，现有测试必须保持全绿**——重构只换外观；CaptionList 的 `data-testid`/`data-sid`/文本必须保留，否则组件测试会断。
+
+> 另：Task 7 代码质量审查发现的 Important 问题（`useDataChannel` 只暴露最新消息、React 批处理下会丢 data 消息）已修复——`CaptionPanel` 改用 `useDataChannel("captions", onMessage)` 回调，每条消息同步派发。
+
+### Task A1: 初始化 Tailwind + shadcn/ui
+
+**Files:** 由 shadcn 生成（`components.json`、`app/globals.css` 更新、`lib/utils.ts`、Tailwind 配置、`components/ui/*`）
+
+- [ ] Step 1: `cd web && npx shadcn@latest init`，选默认（CSS variables = yes，base color 选 neutral/slate）。若 Tailwind 未装，让其自动装 Tailwind v4。
+- [ ] Step 2: 添加组件：`npx shadcn@latest add button input label select card badge`
+- [ ] Step 3: 验证 `npx tsc --noEmit` 干净、`npm test` 仍全绿。
+- [ ] Step 4: 提交 `feat: set up Tailwind + shadcn/ui`
+
+### Task A2: JoinForm 改用 shadcn 组件
+
+**Files:** Modify `web/components/JoinForm.tsx`（仅外观；不动 `lib/join.ts` 及其测试）
+
+- [ ] 用 shadcn `Card`、`Label`+`Input`、`Select`（Radix）、`Button` 重写表单外观。提交逻辑、`validateJoin` 调用、路由跳转、错误显示保持不变。
+- [ ] 验证 `npm test`（join 逻辑测试不变全绿）+ `npx tsc --noEmit`。
+- [ ] 提交 `feat: restyle join form with shadcn/ui`
+
+### Task A3: CaptionList + 房间页改用 shadcn
+
+**Files:** Modify `web/components/CaptionList.tsx`、`web/app/rooms/[room]/page.tsx`（不动 CaptionPanel 逻辑）
+
+- [ ] CaptionList：用 Tailwind + shadcn `Badge`（发言人）/`Card`（气泡）重排版，译文用强调色。**必须保留** `data-testid="final"`、`data-testid="interim"`、`data-sid`，以及 speaker/original/translation 文本，确保 `CaptionList.test.tsx` 2/2 仍过。
+- [ ] 房间页：用 shadcn 容器/Card 美化布局与加载/错误态；token 获取、Suspense 拆分、LiveKitRoom 接线保持不变。
+- [ ] 验证 `npm test`（CaptionList 2/2）+ `npx tsc --noEmit`。
+- [ ] 提交 `feat: restyle captions + room page with shadcn/ui`
+
+---
+
 ## 自检备注（已核对）
 
 - **协议一致性**：`web/lib/captions.ts`（parse）、`web/components/CaptionList.tsx`（render）、`agent/captions.py`（build）三处字段名一致：`type/id/sid/speaker/srcLang/original/tgtLang/translation/ts`。
