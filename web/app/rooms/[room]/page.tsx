@@ -4,6 +4,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { CaptionPanel } from "@/components/CaptionPanel";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function RoomPageInner() {
   const params = useParams<{ room: string }>();
@@ -29,8 +30,27 @@ function RoomPageInner() {
       .catch((e) => setError(String(e.message ?? e)));
   }, [params.room, search]);
 
-  if (error) return <main style={{ padding: 32, color: "crimson" }}>连接失败：{error}</main>;
-  if (!conn) return <main style={{ padding: 32 }}>正在连接…</main>;
+  if (error)
+    return (
+      <main className="min-h-screen flex items-center justify-center p-8 bg-background">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <p className="text-destructive text-sm">连接失败：{error}</p>
+          </CardContent>
+        </Card>
+      </main>
+    );
+
+  if (!conn)
+    return (
+      <main className="min-h-screen flex items-center justify-center p-8 bg-background">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <p className="text-muted-foreground text-sm animate-pulse">正在连接…</p>
+          </CardContent>
+        </Card>
+      </main>
+    );
 
   return (
     <LiveKitRoom
@@ -42,9 +62,19 @@ function RoomPageInner() {
       onError={(e) => setError(e.message)}
     >
       <RoomAudioRenderer />
-      <main style={{ padding: 32 }}>
-        <h2>房间：{params.room}</h2>
-        <CaptionPanel />
+      <main className="min-h-screen bg-background">
+        <div className="mx-auto max-w-2xl px-4 py-8 flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">
+                房间：{params.room}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CaptionPanel />
+            </CardContent>
+          </Card>
+        </div>
       </main>
     </LiveKitRoom>
   );
@@ -52,7 +82,17 @@ function RoomPageInner() {
 
 export default function RoomPage() {
   return (
-    <Suspense fallback={<main style={{ padding: 32 }}>正在加载…</main>}>
+    <Suspense
+      fallback={
+        <main className="min-h-screen flex items-center justify-center p-8 bg-background">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-6">
+              <p className="text-muted-foreground text-sm animate-pulse">正在加载…</p>
+            </CardContent>
+          </Card>
+        </main>
+      }
+    >
       <RoomPageInner />
     </Suspense>
   );

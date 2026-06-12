@@ -1,19 +1,38 @@
 import type { CaptionStore } from "@/lib/captionStore";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export function CaptionList({ store }: { store: CaptionStore }) {
   return (
-    <div style={{ display: "grid", gap: 12 }}>
+    <div className="flex flex-col gap-3">
       {store.finals.map((f) => (
-        <div key={f.id} data-testid="final" data-sid={f.sid} style={{ borderBottom: "1px solid #eee", paddingBottom: 8 }}>
-          <strong>{f.speaker}</strong>
-          <p style={{ margin: "4px 0" }}>{f.original}</p>
-          <p style={{ margin: 0, color: "#2563eb" }}>{f.translation}</p>
+        <div
+          key={f.id}
+          data-testid="final"
+          data-sid={f.sid}
+          className="rounded-xl bg-card ring-1 ring-foreground/10 px-4 py-3 flex flex-col gap-1.5"
+        >
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{f.speaker}</Badge>
+          </div>
+          <p className="text-sm text-foreground leading-snug">{f.original}</p>
+          <p className="text-sm text-primary font-medium leading-snug">{f.translation}</p>
         </div>
       ))}
       {Object.values(store.interims).map((i) => (
-        <div key={`interim-${i.sid}`} data-testid="interim" data-sid={i.sid} style={{ opacity: 0.5 }}>
-          <strong>{i.speaker}</strong>
-          <p style={{ margin: "4px 0" }}>{i.original}</p>
+        <div
+          key={`interim-${i.sid}`}
+          data-testid="interim"
+          data-sid={i.sid}
+          className={cn(
+            "rounded-xl bg-card ring-1 ring-foreground/10 px-4 py-3 flex flex-col gap-1.5",
+            "opacity-60"
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="italic">{i.speaker}</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground italic animate-pulse leading-snug">{i.original}</p>
         </div>
       ))}
     </div>
