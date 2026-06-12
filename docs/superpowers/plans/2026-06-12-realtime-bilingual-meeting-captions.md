@@ -38,8 +38,13 @@ agent/                              # Python 转录 Agent
 │   ├── test_translate.py
 │   └── test_captions.py
 ├── requirements.txt
+├── Dockerfile                      # 容器化 worker（Python 3.12-slim）
+├── .dockerignore
 └── .env.example
+docker-compose.yml                  # 仓库根：transcriber 服务（仅 Agent 容器化）
 ```
+
+> **运行方式约定**：单元测试在本机 `uv`（Python 3.12）环境跑（快）；常驻 worker（transcriber.py）跑在 Docker 容器里（绕开本机 Python 版本、贴近部署）。web 用 `npm run dev` 本地跑。本机系统 Python 是 3.9，所有 Python 操作都经由 `uv`（已安装 0.11.21）。
 
 **字幕协议（前后端必须一致）：** `interim` = `{type,sid,speaker,original}`；`final` = `{type,id,sid,speaker,srcLang,original,tgtLang,translation,ts}`。`srcLang`/`tgtLang` ∈ `"zh"|"ja"`。
 
@@ -1210,8 +1215,8 @@ if __name__ == "__main__":
 
 - [ ] **Step 2: 静态导入自检**
 
-Run: `cd agent && . .venv/bin/activate && python -c "import transcriber"`
-Expected: 无 ImportError（依赖已装齐）。若报某 API 名不存在（如 `agents.stt.SpeechEventType`），按已装版本修正后重跑。
+Run: `cd agent && uv run python -c "import transcriber"`
+Expected: 无 ImportError（依赖已装齐）。**已装版本为 livekit-agents 1.6.0 / livekit(rtc) 1.1.8**——本任务的示例代码按通用 API 编写，务必对照 1.6.0 实际 API 校验事件类型常量（如 STT 事件枚举）、`AudioStream` 用法与 `publish_data` 签名，按实际版本修正后再跑。
 
 - [ ] **Step 3: 提交**
 
@@ -1221,7 +1226,61 @@ git add agent/transcriber.py && git commit -m "feat: multi-participant Deepgram 
 
 ---
 
-## Task 11: README、环境样例与端到端手动验证
+## Task 11: 容器化 Agent（Dockerfile + docker-compose）
+
+> 让常驻 worker 跑在容器里，绕开本机 Python 版本、贴近部署。Agent 只对外发起连接（LiveKit Cloud / Deepgram / Gemini），无需暴露入站端口。
+
+**Files:**
+- Create: `agent/Dockerfile`、`agent/.dockerignore`、`docker-compose.yml`（仓库根）
+
+- [ ] **Step 1: 写 .dockerignore**
+
+Create `agent/.dockerignore`:
+```
+.venv/
+__pycache__/
+*.pyc
+.env
+tests/
+```
+
+- [ ] **Step 2: 写 Dockerfile**
+
+Create `agent/Dockerfile`:
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["python", "transcriber.py", "start"]
+```
+
+- [ ] **Step 3: 写 docker-compose.yml（仓库根）**
+
+Create `docker-compose.yml`:
+```yaml
+services:
+  transcriber:
+    build: ./agent
+    env_file: ./agent/.env
+    restart: unless-stopped
+```
+
+- [ ] **Step 4: 构建镜像（验证）**
+
+Run: `docker compose build`
+Expected: 镜像构建成功（pip 装齐 livekit-agents 等依赖）。注意：worker 真正注册需要有效的 `agent/.env` 凭据，那一步在 Task 12 端到端验证里做；本步只验证镜像能构建。
+
+- [ ] **Step 5: 提交**
+
+```bash
+git add agent/Dockerfile agent/.dockerignore docker-compose.yml && git commit -m "feat: containerize transcriber agent"
+```
+
+---
+
+## Task 12: README、环境样例与端到端手动验证
 
 **Files:**
 - Create: `web/.env.local.example`、`README.md`
@@ -1256,18 +1315,17 @@ npm install
 npm run dev                        # http://localhost:3000
 ```
 
-## 启动转录 Agent
+## 启动转录 Agent（Docker）
 ```bash
-cd agent
-cp .env.example .env               # 填入 LiveKit / Deepgram / Gemini 凭据
-python3 -m venv .venv && . .venv/bin/activate
-pip install -r requirements.txt
-python transcriber.py dev          # 注册 worker，自动加入房间
+cp agent/.env.example agent/.env   # 填入 LiveKit / Deepgram / Gemini 凭据
+docker compose up --build          # 构建并启动 worker，自动注册并加入房间
 ```
 
 ## 测试
 - 前端：`cd web && npm test`
-- Agent：`cd agent && pytest -q`
+- Agent（本机 uv 环境，Python 3.12）：`cd agent && uv run pytest -q`
+
+> 本机系统 Python 为 3.9，过旧；Agent 的本地操作统一经由已安装的 `uv`（`uv venv --python 3.12` 已创建 `agent/.venv`）。常驻 worker 通过 Docker 运行，无需本机 Python。
 ````
 
 - [ ] **Step 3: 端到端手动验证**
