@@ -1111,12 +1111,53 @@ git add agent/captions.py agent/tests/test_captions.py && git commit -m "feat: a
 
 ---
 
-## Task 10: Agent 转录主流程（transcriber.py）
+## 计划修订（2026-06-12）：改用 Deepgram diarization 区分说话人
 
-> 这是对接 LiveKit/Deepgram SDK 的胶水代码，纯逻辑已在 Task 8/9 单测覆盖，本任务用手动/集成方式验证。`livekit-agents` 各小版本 API 名称可能略有差异，按已安装版本调整事件类型/方法名。
+方向变更：场景改为「**一台设备一个麦克风收多人**」，在单条音轨内按声纹区分说话人（匿名「说话人N」），每台设备基本单一语种。说话人身份**不再**用 LiveKit 参与者，而是 Deepgram diarization 给出的说话人编号。
+- `sid` = `参与者identity#说话人序号`；`speaker` = `设备名 · 说话人N`。**前端协议/UI 不变**（仍按 `sid` 分组、显示 `speaker`）。
+- 实现：livekit-agents 的 Deepgram 插件若不暴露逐词 `speaker_id`，则直接用 Deepgram Python SDK 建流式连接拿 diarization 标签。
+- 原 Task 10 拆为 **10a**（纯逻辑 diarize.py，TDD）+ **10b**（transcriber 胶水）。
+
+### Task 10a: 说话人标签/分组纯逻辑（diarize.py）
+
+**Files:** Create `agent/diarize.py`、Test `agent/tests/test_diarize.py`
+
+- [ ] Step 1（失败测试）Create `agent/tests/test_diarize.py`:
+```python
+from diarize import speaker_sid, speaker_label
+
+
+def test_speaker_sid_combines_identity_and_index():
+    assert speaker_sid("tang-abc", 0) == "tang-abc#0"
+    assert speaker_sid("tang-abc", 2) == "tang-abc#2"
+
+
+def test_speaker_label_is_one_based_with_device_name():
+    assert speaker_label("会议室A", 0) == "会议室A · 说话人1"
+    assert speaker_label("会议室A", 1) == "会议室A · 说话人2"
+```
+- [ ] Step 2 运行 `cd agent && uv run pytest tests/test_diarize.py -q` → FAIL。
+- [ ] Step 3（实现）Create `agent/diarize.py`:
+```python
+from __future__ import annotations
+
+
+def speaker_sid(identity: str, speaker: int) -> str:
+    return f"{identity}#{speaker}"
+
+
+def speaker_label(device_name: str, speaker: int) -> str:
+    return f"{device_name} · 说话人{speaker + 1}"
+```
+- [ ] Step 4 运行测试 → PASS（2）。
+- [ ] Step 5 提交 `feat: agent diarization speaker label/sid helpers`
+
+### Task 10b: 转录主流程（transcriber.py，带 diarization）
+
+> 集成胶水，无单测；闭环 = 静态导入 + 对照已装 SDK 的 API 存在性核对（真实 E2E 在 Task 12，需凭据）。**已装 livekit-agents 1.6.0 / livekit(rtc) 1.1.8。** 下方"参考代码"是**未带 diarization 的旧稿，仅作起点**；10b 必须在其基础上加 diarization：①Deepgram 开 `diarize=True`；②从结果取说话人编号；③用 `diarize.speaker_sid/speaker_label` 构造 `sid`/`speaker`；④若 livekit 插件不暴露 `speaker_id`，改用 Deepgram Python SDK 直连（requirements 增加 `deepgram-sdk`）。
 
 **Files:**
-- Create: `agent/transcriber.py`
+- Create: `agent/transcriber.py`（参考下方旧稿 + 上述 diarization 改造）
 
 - [ ] **Step 1: 写转录入口**
 
