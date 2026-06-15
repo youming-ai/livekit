@@ -1,0 +1,5 @@
+services:
+  transcriber:
+    build: ./agent
+    env_file: ./agent/.env
+    restart: unless-stopped
