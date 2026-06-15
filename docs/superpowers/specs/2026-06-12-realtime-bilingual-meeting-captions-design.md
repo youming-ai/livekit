@@ -140,7 +140,7 @@ LiveKit-demo/
 ├── web/                          # Next.js 前端
 │   ├── app/
 │   │   ├── page.tsx              # 加入页（昵称+母语+房间名）
-│   │   ├── room/[room]/page.tsx  # 房间页 + 字幕面板
+│   │   ├── rooms/[room]/page.tsx # 房间页 + 字幕面板
 │   │   └── api/token/route.ts    # 服务端签发 LiveKit token
 │   ├── components/
 │   │   ├── JoinForm.tsx
