@@ -121,6 +121,10 @@ async def _transcribe_track(
                     pass
     except Exception:
         logger.exception("Error in transcribe_track for %s", device_name)
+    finally:
+        # AudioStream has no async-context-manager support; close it explicitly so the
+        # background FFI queue subscription is released even on the error path.
+        await audio_stream.aclose()
 
 
 async def _handle_speech_event(
