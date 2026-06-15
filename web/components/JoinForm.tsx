@@ -5,26 +5,29 @@ import { validateJoin } from "@/lib/join";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+type Lang = "zh" | "ja";
+const LANG_LABEL: Record<Lang, string> = { zh: "我说中文", ja: "我说日文" };
 
 export function JoinForm() {
   const router = useRouter();
+  const [step, setStep] = useState<"lang" | "details">("lang");
+  const [spokenLang, setSpokenLang] = useState<Lang | "">("");
   const [name, setName] = useState("");
   const [room, setRoom] = useState("");
-  const [spokenLang, setSpokenLang] = useState("zh");
   const [error, setError] = useState("");
+
+  function chooseLang(lang: Lang) {
+    setSpokenLang(lang);
+    setError("");
+    setStep("details");
+  }
+
+  function back() {
+    setStep("lang");
+    setError("");
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,56 +44,68 @@ export function JoinForm() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-xl font-semibold text-center">
+          <CardTitle className="text-center text-xl font-semibold">
             双语会议字幕
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={submit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="name">昵称</Label>
-              <Input
-                id="name"
-                placeholder="请输入昵称"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
+          {step === "lang" ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-center text-sm text-muted-foreground">
+                请选择你这边主要说的语言
+              </p>
+              {(["zh", "ja"] as const).map((lang) => (
+                <button
+                  key={lang}
+                  type="button"
+                  onClick={() => chooseLang(lang)}
+                  className="flex flex-col items-center gap-1 rounded-xl border bg-card px-4 py-5 text-center transition-colors hover:border-primary hover:bg-accent"
+                >
+                  <span className="text-lg font-medium">{LANG_LABEL[lang]}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {lang === "zh" ? "译文显示日语" : "译文显示中文"}
+                  </span>
+                </button>
+              ))}
             </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="room">房间名</Label>
-              <Input
-                id="room"
-                placeholder="请输入房间名"
-                value={room}
-                onChange={(e) => setRoom(e.target.value)}
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label>语言</Label>
-              <Select
-                value={spokenLang}
-                onValueChange={(val) => setSpokenLang(val as string)}
+          ) : (
+            <form onSubmit={submit} className="flex flex-col gap-4">
+              <button
+                type="button"
+                onClick={back}
+                className="self-start text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="zh">我说中文</SelectItem>
-                  <SelectItem value="ja">私は日本語を話す</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                ← {spokenLang ? LANG_LABEL[spokenLang] : ""}（点此重新选择）
+              </button>
 
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="room">房间号</Label>
+                <Input
+                  id="room"
+                  placeholder="请输入房间号"
+                  value={room}
+                  autoFocus
+                  onChange={(e) => setRoom(e.target.value)}
+                />
+              </div>
 
-            <Button type="submit" className="w-full mt-1">
-              加入会议
-            </Button>
-          </form>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="name">名称</Label>
+                <Input
+                  id="name"
+                  placeholder="请输入名称"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+
+              {error && <p className="text-sm text-destructive">{error}</p>}
+
+              <Button type="submit" className="mt-1 w-full">
+                加入会议
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>

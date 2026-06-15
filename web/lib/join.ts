@@ -17,10 +17,10 @@ export function validateJoin(input: {
 }): Result {
   const name = (input.name ?? "").trim();
   const room = (input.room ?? "").trim();
-  if (!name) return { ok: false, error: "请输入昵称" };
-  if (!room) return { ok: false, error: "请输入房间名" };
+  if (!room) return { ok: false, error: "请输入房间号" };
+  if (!name) return { ok: false, error: "请输入名称" };
   if (input.spokenLang !== "zh" && input.spokenLang !== "ja") {
-    return { ok: false, error: "请选择你的母语" };
+    return { ok: false, error: "请先选择语言" };
   }
   return { ok: true, value: { name, room, spokenLang: input.spokenLang } };
 }
