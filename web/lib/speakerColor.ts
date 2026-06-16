@@ -1,4 +1,4 @@
-// A small, deterministic palette for anonymous speaker tags.
+// A small, deterministic palette for speaker tags.
 // The color stays stable for the lifetime of a given sid (speaker id), so
 // captions from the same person share a color across the page.
 
@@ -27,16 +27,12 @@ export function speakerColor(sid: string | number | undefined): string {
 }
 
 /**
- * Extract a single character (or a short initial) to show inside the speaker
- * avatar. Handles Chinese/Japanese strings by taking the first non-whitespace
- * character.
+ * Extract a single character to show inside the speaker avatar. The speaker
+ * label is the participant's display name, so we take its first non-whitespace
+ * character (works for Chinese/Japanese/Latin names alike).
  */
 export function speakerInitial(speaker: string | undefined): string {
   const s = (speaker ?? "").trim();
   if (!s) return "•";
-  // Strip a leading "说话人" / "说話者" prefix; show the first character
-  // after the digits, otherwise the first character of the string.
-  const m = s.match(/^(?:说话人|说話者|話者|Speaker)\s*\d*/i);
-  const tail = m ? s.slice(m[0].length).trim() : s;
-  return (tail || s).slice(0, 1).toUpperCase();
+  return s.slice(0, 1).toUpperCase();
 }

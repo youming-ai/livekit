@@ -2,9 +2,14 @@
 import { describe, it, expect } from "vitest";
 import { buildAccessToken } from "@/lib/token";
 
-function decodePayload(jwt: string): any {
+type DecodedToken = {
+  video: { room: string; roomJoin: boolean };
+  attributes: { spoken_lang: string };
+};
+
+function decodePayload(jwt: string): DecodedToken {
   const [, payload] = jwt.split(".");
-  return JSON.parse(Buffer.from(payload, "base64url").toString());
+  return JSON.parse(Buffer.from(payload, "base64url").toString()) as DecodedToken;
 }
 
 describe("buildAccessToken", () => {

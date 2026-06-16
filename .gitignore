@@ -5,3 +5,7 @@ node_modules/
 __pycache__/
 *.pyc
 .venv/
+
+# Editor / AI assistant local config
+.claude/
+.DS_Store
