@@ -1111,7 +1111,13 @@ git add agent/captions.py agent/tests/test_captions.py && git commit -m "feat: a
 
 ---
 
-## 计划修订（2026-06-12）：改用 Deepgram diarization 区分说话人
+## 计划修订（2026-06-15）：回到每人一台设备/麦克风
+
+2026-06-12 的单麦克风声纹分离路线已废弃。当前产品方向贴近 Zoom 实时翻译：每位参与者用自己的浏览器设备加入会议并发布独立 LiveKit 音轨，后台 Agent 订阅每个参与者音轨，`sid` 直接使用 LiveKit participant identity，`speaker` 使用参与者显示名。Deepgram 只负责单人音轨 ASR，不再负责说话人分离。
+
+---
+
+## 历史修订（2026-06-12，已废弃）：改用 Deepgram diarization 区分说话人
 
 方向变更：场景改为「**一台设备一个麦克风收多人**」，在单条音轨内按声纹区分说话人（匿名「说话人N」），每台设备基本单一语种。说话人身份**不再**用 LiveKit 参与者，而是 Deepgram diarization 给出的说话人编号。
 - `sid` = `参与者identity#说话人序号`；`speaker` = `设备名 · 说话人N`。**前端协议/UI 不变**（仍按 `sid` 分组、显示 `speaker`）。

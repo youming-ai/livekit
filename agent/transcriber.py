@@ -1,15 +1,8 @@
-"""Diarized multi-speaker transcription + translation agent.
+"""Participant-based transcription + translation agent.
 
-Path A (livekit-plugins-deepgram) was chosen because:
-  - deepgram.STT.__init__ accepts enable_diarization=True (confirmed via probe)
-  - stt.SpeechData.speaker_id field exists (str | None, format "S{int}" for finals,
-    None for interim — confirmed via probe of live_transcription_to_speech_data source)
-  - stt.SpeechStream supports push_frame / async-for / context manager (confirmed)
-  - No need for the raw deepgram-sdk; the plugin surfaces all required data.
-
-Speaker index extraction:
-  - Final  : speaker_id = "S0", "S1", … → strip "S" prefix, parse int. None → 0.
-  - Interim: speaker_id is always None (plugin explicitly sets None for interims) → default 0.
+Each participant joins from their own browser/device and publishes a separate
+LiveKit audio track. Speaker attribution therefore comes from the LiveKit
+participant identity/name rather than single-microphone voice separation.
 """
 from __future__ import annotations
 
@@ -24,7 +17,7 @@ from livekit import agents, rtc
 from livekit.plugins import deepgram
 
 from captions import build_final, build_interim
-from diarize import speaker_label, speaker_sid
+from speakers import speaker_label, speaker_sid
 from translate import GeminiClient, TranslationError, Translator, other_lang
 
 load_dotenv()
@@ -38,42 +31,24 @@ _SUPPORTED_SPOKEN = {"zh", "ja"}
 _DG_LANG: dict[str, str] = {"zh": "zh", "ja": "ja"}
 
 
-def _speaker_int(speaker_id: str | None) -> int:
-    """Normalise a SpeechData.speaker_id to a plain integer index.
-
-    The livekit-plugins-deepgram plugin formats speaker_id as "S{n}" (e.g. "S0", "S1").
-    For interims, speaker_id is always None → default to 0.
-    Handles unexpected formats gracefully.
-    """
-    if speaker_id is None:
-        return 0
-    try:
-        # Expected format: "S0", "S1", …
-        stripped = speaker_id.lstrip("Ss").strip()
-        return int(stripped)
-    except ValueError:
-        logger.warning("Unexpected speaker_id format: %r — defaulting to 0", speaker_id)
-        return 0
-
-
 async def _transcribe_track(
     track: rtc.AudioTrack,
     participant: rtc.RemoteParticipant,
     local_participant: rtc.LocalParticipant,
     translator: Translator,
 ) -> None:
-    """Stream one audio track through Deepgram with diarization, publish bilingual captions."""
+    """Stream one participant audio track through Deepgram and publish captions."""
     spoken = participant.attributes.get("spoken_lang", "zh")
     if spoken not in _SUPPORTED_SPOKEN:
         spoken = "zh"
     tgt = other_lang(spoken)
-    device_name: str = participant.name or participant.identity
-    identity: str = participant.identity
+    speaker_sid_value = speaker_sid(participant.identity)
+    speaker_name = speaker_label(participant.name, participant.identity)
     dg_lang = _DG_LANG[spoken]
 
     logger.info(
         "Starting transcription for %s (spoken=%s, tgt=%s)",
-        device_name,
+        speaker_name,
         spoken,
         tgt,
     )
@@ -81,7 +56,6 @@ async def _transcribe_track(
     stt_engine = deepgram.STT(
         model="nova-3",
         language=dg_lang,
-        enable_diarization=True,
         interim_results=True,
         punctuate=True,
     )
@@ -106,8 +80,8 @@ async def _transcribe_track(
                 async for speech_event in stt_stream:
                     await _handle_speech_event(
                         speech_event=speech_event,
-                        identity=identity,
-                        device_name=device_name,
+                        speaker_sid_value=speaker_sid_value,
+                        speaker_name=speaker_name,
                         spoken=spoken,
                         tgt=tgt,
                         local_participant=local_participant,
@@ -120,7 +94,7 @@ async def _transcribe_track(
                 except asyncio.CancelledError:
                     pass
     except Exception:
-        logger.exception("Error in transcribe_track for %s", device_name)
+        logger.exception("Error in transcribe_track for %s", speaker_name)
     finally:
         # AudioStream has no async-context-manager support; close it explicitly so the
         # background FFI queue subscription is released even on the error path.
@@ -130,8 +104,8 @@ async def _transcribe_track(
 async def _handle_speech_event(
     *,
     speech_event: agents.stt.SpeechEvent,
-    identity: str,
-    device_name: str,
+    speaker_sid_value: str,
+    speaker_name: str,
     spoken: str,
     tgt: str,
     local_participant: rtc.LocalParticipant,
@@ -148,12 +122,12 @@ async def _handle_speech_event(
     if not text:
         return
 
-    spk_idx = _speaker_int(alt.speaker_id)
-    sid = speaker_sid(identity, spk_idx)
-    speaker = speaker_label(device_name, spk_idx)
-
     if speech_event.type == SpeechEventType.INTERIM_TRANSCRIPT:
-        payload = build_interim(sid=sid, speaker=speaker, original=text)
+        payload = build_interim(
+            sid=speaker_sid_value,
+            speaker=speaker_name,
+            original=text,
+        )
         await local_participant.publish_data(payload, reliable=False, topic="captions")
 
     elif speech_event.type == SpeechEventType.FINAL_TRANSCRIPT:
@@ -166,8 +140,8 @@ async def _handle_speech_event(
 
         payload = build_final(
             id=str(uuid.uuid4()),
-            sid=sid,
-            speaker=speaker,
+            sid=speaker_sid_value,
+            speaker=speaker_name,
             src_lang=spoken,
             original=text,
             tgt_lang=tgt,

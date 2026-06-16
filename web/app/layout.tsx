@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "双语会议字幕",
-  description: "实时中↔日会议字幕：单麦多人声纹分辨 + 翻译",
+  description: "实时中↔日会议字幕：多人设备分轨 + 翻译",
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="zh-CN"
       className={`${geistSans.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
