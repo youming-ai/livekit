@@ -1,4 +1,3 @@
-"use client";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Languages, ArrowLeft, ArrowRight, Mic, Hash, User2 } from "lucide-react";

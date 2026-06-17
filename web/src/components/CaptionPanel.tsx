@@ -1,4 +1,3 @@
-"use client";
 import { useReducer } from "react";
 import { useDataChannel } from "@livekit/components-react";
 import { parseCaption } from "@/lib/captions";

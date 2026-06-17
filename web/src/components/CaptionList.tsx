@@ -1,4 +1,3 @@
-"use client";
 import { Languages, Mic, MicOff, Quote } from "lucide-react";
 import type { CaptionStore } from "@/lib/captionStore";
 import { Avatar } from "@/components/ui/avatar";
