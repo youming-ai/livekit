@@ -12,7 +12,7 @@
 
 ### 数据流
 
-1. 前端选择语言、填写房间与昵称后，向 `/api/token` 请求一个 LiveKit JWT；token 中写入参会者昵称与 `spoken_lang` 属性。
+1. 前端选择语言、填写房间与昵称后，调用 TanStack Start 服务端函数（server function）签发一个 LiveKit JWT；token 中写入参会者昵称与 `spoken_lang` 属性。
 2. 浏览器以该 token 连接房间并发布麦克风音频。
 3. Agent 监听 `track_subscribed`，对每条音轨读取 `spoken_lang`，用对应语言做 Deepgram 转录（先 interim 预览、后 final 定稿）。
 4. 每条 final 文本经 Gemini 翻译成另一门语言，连同原文一起通过数据通道（topic `captions`）广播。
