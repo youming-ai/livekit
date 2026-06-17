@@ -6,7 +6,7 @@
 
 ## 架构
 
-- **web/**：Next.js + shadcn/ui 前端。提供两步加入流程（先选本人语言 中/日，再填房间名与昵称），连接 LiveKit 发布麦克风音频，并按发言人分组渲染双语字幕。
+- **web/**：TanStack Start（基于 Vite）+ shadcn/ui 前端。提供两步加入流程（先选本人语言 中/日，再填房间名与昵称），连接 LiveKit 发布麦克风音频，并按发言人分组渲染双语字幕。
 - **agent/**：Python `livekit-agents` Worker（通过 Docker 运行）。订阅房间内每位参会者的音轨，按该参会者声明的语言调用 Deepgram 流式转录，再交由 Gemini 翻译，最终通过 LiveKit 数据通道将字幕推送给前端。
 - **LiveKit Cloud**：承担信令与媒体中转，前端与 Agent 均连接同一个 LiveKit 项目。
 
@@ -34,6 +34,8 @@
 
 ## 启动前端
 
+> 前端基于 TanStack Start（RC 版）。
+
 ```bash
 cd web
 cp .env.local.example .env.local   # 填入 LiveKit 凭据
@@ -46,7 +48,7 @@ npm run dev                        # 浏览器访问 http://localhost:3000
 ```
 LIVEKIT_API_KEY=...
 LIVEKIT_API_SECRET=...
-NEXT_PUBLIC_LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_URL=wss://your-project.livekit.cloud
 ```
 
 ---
