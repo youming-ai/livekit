@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "@tanstack/react-router";
 import { Languages, ArrowLeft, ArrowRight, Mic, Hash, User2 } from "lucide-react";
 import { validateJoin } from "@/lib/join";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ const LANG_OPTIONS: {
 ];
 
 export function JoinForm() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [step, setStep] = useState<"lang" | "details">("lang");
   const [spokenLang, setSpokenLang] = useState<Lang | "">("");
   const [name, setName] = useState("");
@@ -66,11 +66,11 @@ export function JoinForm() {
       setError(r.error);
       return;
     }
-    const q = new URLSearchParams({
-      name: r.value.name,
-      lang: r.value.spokenLang,
+    navigate({
+      to: "/rooms/$room",
+      params: { room: r.value.room },
+      search: { name: r.value.name, lang: r.value.spokenLang },
     });
-    router.push(`/rooms/${encodeURIComponent(r.value.room)}?${q.toString()}`);
   }
 
   const selected = LANG_OPTIONS.find((o) => o.value === spokenLang);
