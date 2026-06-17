@@ -49,6 +49,7 @@ function RoomPage() {
   // LiveKit components touch browser-only WebRTC APIs; render them only after
   // mount so SSR emits the loading shell instead of crashing.
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration guard: only correct way to defer browser-only LiveKit APIs past SSR
   useEffect(() => setMounted(true), []);
 
   const [conn, setConn] = useState<{ token: string; url: string } | null>(null);
