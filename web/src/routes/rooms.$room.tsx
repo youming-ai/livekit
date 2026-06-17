@@ -1,7 +1,8 @@
-"use client";
-import { useEffect, useState, Suspense } from "react";
-import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import {
+  Link,
+  createFileRoute,
+} from "@tanstack/react-router";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -18,6 +19,8 @@ import {
   MicOff,
   LogOut,
 } from "lucide-react";
+import { requestToken } from "@/lib/requestToken";
+import type { Lang } from "@/lib/captions";
 import { CaptionPanel } from "@/components/CaptionPanel";
 import { MicMuteIndicator } from "@/components/CaptionList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,31 +29,39 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
-function RoomPageInner() {
-  const params = useParams<{ room: string }>();
-  const search = useSearchParams();
+interface RoomSearch {
+  name: string;
+  lang: Lang;
+}
+
+export const Route = createFileRoute("/rooms/$room")({
+  validateSearch: (search: Record<string, unknown>): RoomSearch => ({
+    name: typeof search.name === "string" ? search.name : "",
+    lang: search.lang === "ja" ? "ja" : "zh",
+  }),
+  component: RoomPage,
+});
+
+function RoomPage() {
+  const { room } = Route.useParams();
+  const { name, lang } = Route.useSearch();
+
+  // LiveKit components touch browser-only WebRTC APIs; render them only after
+  // mount so SSR emits the loading shell instead of crashing.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const [conn, setConn] = useState<{ token: string; url: string } | null>(null);
   const [error, setError] = useState("");
-  const name = search.get("name") ?? "";
-  const lang = search.get("lang") === "ja" ? "ja" : "zh";
 
   useEffect(() => {
-    fetch("/api/token", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        room: params.room,
-        name,
-        spokenLang: lang,
-      }),
-    })
-      .then(async (r) => {
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error ?? "获取 token 失败");
-        setConn({ token: data.token, url: data.url });
-      })
-      .catch((e) => setError(String(e.message ?? e)));
-  }, [params.room, name, lang]);
+    if (!mounted) return;
+    requestToken({ data: { room, name, lang } })
+      .then((data) => setConn({ token: data.token, url: data.url }))
+      .catch((e: unknown) =>
+        setError(e instanceof Error ? e.message : String(e)),
+      );
+  }, [mounted, room, name, lang]);
 
   if (error)
     return (
@@ -65,7 +76,7 @@ function RoomPageInner() {
               <p className="text-sm text-muted-foreground">{error}</p>
             </div>
             <Link
-              href="/"
+              to="/"
               className="inline-flex h-8 items-center gap-1.5 rounded-lg border bg-background px-2.5 text-sm font-medium transition-colors hover:bg-muted"
             >
               <ArrowLeft className="size-3.5" />
@@ -98,7 +109,7 @@ function RoomPageInner() {
       onError={(e) => setError(e.message)}
     >
       <RoomAudioRenderer />
-      <RoomBody room={params.room} name={name} lang={lang} />
+      <RoomBody room={room} name={name} lang={lang} />
     </LiveKitRoom>
   );
 }
@@ -110,14 +121,14 @@ function RoomBody({
 }: {
   room: string;
   name: string;
-  lang: "zh" | "ja";
+  lang: Lang;
 }) {
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
       <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-2 px-3 py-3 sm:gap-3 sm:px-4">
           <Link
-            href="/"
+            to="/"
             aria-label="返回首页"
             className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
@@ -152,7 +163,7 @@ function RoomBody({
             </div>
             <MicToggle />
             <Link
-              href="/"
+              to="/"
               aria-label="离开会议"
               className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
@@ -212,29 +223,10 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={cn(
-        "flex min-h-screen w-full items-center justify-center bg-background p-6 text-foreground"
+        "flex min-h-screen w-full items-center justify-center bg-background p-6 text-foreground",
       )}
     >
       {children}
     </div>
-  );
-}
-
-export default function RoomPage() {
-  return (
-    <Suspense
-      fallback={
-        <Shell>
-          <Card className="w-full max-w-md">
-            <CardContent className="flex items-center gap-3 pt-6 text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" />
-              <p className="text-sm">正在加载…</p>
-            </CardContent>
-          </Card>
-        </Shell>
-      }
-    >
-      <RoomPageInner />
-    </Suspense>
   );
 }

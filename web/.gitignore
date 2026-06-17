@@ -44,4 +44,5 @@ yarn-error.log*
 .output
 .nitro
 .tanstack
+dist
 src/routeTree.gen.ts
