@@ -77,6 +77,8 @@ a {
 }
 
 :root {
+  --font-geist-sans: "Geist Variable";
+  --font-geist-mono: "Geist Mono Variable";
   --font-sans: var(--font-geist-sans), "PingFang SC", "Hiragino Sans GB", "Hiragino Kaku Gothic ProN", "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif;
   --font-heading: var(--font-sans);
   --font-mono: var(--font-geist-mono), "SFMono-Regular", Consolas, "Liberation Mono", monospace;

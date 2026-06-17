@@ -39,4 +39,9 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
+
+# TanStack Start / Vite
+.output
+.nitro
+.tanstack
+src/routeTree.gen.ts
