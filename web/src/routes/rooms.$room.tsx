@@ -22,7 +22,7 @@ import {
 import { requestToken } from "@/lib/requestToken";
 import type { Lang } from "@/lib/captions";
 import { CaptionPanel } from "@/components/CaptionPanel";
-import { MicMuteIndicator } from "@/components/CaptionList";
+import { MicMuteIndicator } from "@/components/MicMuteIndicator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

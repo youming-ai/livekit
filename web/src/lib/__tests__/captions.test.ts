@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { encodeCaption, parseCaption, type Caption } from "@/lib/captions";
+import { parseCaption, type Caption } from "@/lib/captions";
 
 const final: Caption = {
   type: "final",
@@ -13,14 +13,16 @@ const final: Caption = {
   ts: 1736668800000,
 };
 
+const encode = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
+
 describe("captions protocol", () => {
-  it("round-trips a final caption", () => {
-    expect(parseCaption(encodeCaption(final))).toEqual(final);
+  it("parses a final caption and keeps CJK verbatim", () => {
+    expect(parseCaption(encode(final))).toEqual(final);
   });
 
-  it("round-trips an interim caption", () => {
+  it("parses an interim caption", () => {
     const interim: Caption = { type: "interim", sid: "PA_x", speaker: "Tang", original: "你…" };
-    expect(parseCaption(encodeCaption(interim))).toEqual(interim);
+    expect(parseCaption(encode(interim))).toEqual(interim);
   });
 
   it("returns null for invalid JSON", () => {
