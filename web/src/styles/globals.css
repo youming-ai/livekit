@@ -203,19 +203,4 @@ html.dark {
   }
 }
 
-@layer utilities {
-  /* Used by the "Listening…" empty state and mic indicator. */
-  @keyframes livekit-pulse {
-    0%, 100% {
-      transform: scale(1);
-      opacity: 0.6;
-    }
-    50% {
-      transform: scale(1.4);
-      opacity: 0;
-    }
-  }
-  .livekit-ping {
-    animation: livekit-pulse 1.6s ease-in-out infinite;
-  }
-}
+

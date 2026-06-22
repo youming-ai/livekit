@@ -21,12 +21,7 @@ export interface FinalCaption {
 
 export type Caption = InterimCaption | FinalCaption;
 
-const encoder = new TextEncoder();
 const decoder = new TextDecoder();
-
-export function encodeCaption(c: Caption): Uint8Array {
-  return encoder.encode(JSON.stringify(c));
-}
 
 function isLang(v: unknown): v is Lang {
   return v === "zh" || v === "ja";

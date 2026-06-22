@@ -15,6 +15,7 @@ import uuid
 from dotenv import load_dotenv
 from livekit import agents, rtc
 from livekit.plugins import deepgram
+from livekit.agents.stt import SpeechEventType
 
 from captions import build_final, build_interim
 from speakers import speaker_label, speaker_sid
@@ -26,9 +27,6 @@ logger = logging.getLogger("transcriber")
 
 # Languages supported for spoken/target routing
 _SUPPORTED_SPOKEN = {"zh", "ja"}
-
-# Deepgram language codes for each supported spoken language
-_DG_LANG: dict[str, str] = {"zh": "zh", "ja": "ja"}
 
 
 async def _transcribe_track(
@@ -44,7 +42,7 @@ async def _transcribe_track(
     tgt = other_lang(spoken)
     speaker_sid_value = speaker_sid(participant.identity)
     speaker_name = speaker_label(participant.name, participant.identity)
-    dg_lang = _DG_LANG[spoken]
+    dg_lang = spoken
 
     logger.info(
         "Starting transcription for %s (spoken=%s, tgt=%s)",
@@ -111,8 +109,6 @@ async def _handle_speech_event(
     local_participant: rtc.LocalParticipant,
     translator: Translator,
 ) -> None:
-    from livekit.agents.stt import SpeechEventType
-
     if not speech_event.alternatives:
         return
 
